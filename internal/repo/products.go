@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Product struct {
@@ -16,11 +16,11 @@ type Product struct {
 }
 
 type ProductRepo struct {
-	DB *pgx.Conn
+	DB *pgxpool.Pool
 }
 
-func NewProductRepo(conn *pgx.Conn) *ProductRepo {
-	return &ProductRepo{DB: conn}
+func NewProductRepo(db *pgxpool.Pool) *ProductRepo {
+	return &ProductRepo{DB: db}
 }
 
 // inserts a new product

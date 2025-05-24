@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Order struct {
@@ -16,11 +16,11 @@ type Order struct {
 }
 
 type OrderRepo struct {
-	DB *pgx.Conn
+	DB *pgxpool.Pool
 }
 
-func NewOrderRepo(conn *pgx.Conn) *OrderRepo {
-	return &OrderRepo{DB: conn}
+func NewOrderRepo(db *pgxpool.Pool) *OrderRepo {
+	return &OrderRepo{DB: db}
 }
 
 // inserts a new order

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Category struct {
@@ -14,11 +14,11 @@ type Category struct {
 }
 
 type CategoryRepo struct {
-	DB *pgx.Conn
+	DB *pgxpool.Pool
 }
 
-func NewCategoryRepo(conn *pgx.Conn) *CategoryRepo {
-	return &CategoryRepo{DB: conn}
+func NewCategoryRepo(db *pgxpool.Pool) *CategoryRepo {
+	return &CategoryRepo{DB: db}
 }
 
 // inserts a new category

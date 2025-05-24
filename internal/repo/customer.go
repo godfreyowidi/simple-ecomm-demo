@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Customer struct {
@@ -16,11 +16,11 @@ type Customer struct {
 }
 
 type CustomerRepo struct {
-	DB *pgx.Conn
+	DB *pgxpool.Pool
 }
 
-func NewCustomerRepo(conn *pgx.Conn) *CustomerRepo {
-	return &CustomerRepo{DB: conn}
+func NewCustomerRepo(db *pgxpool.Pool) *CustomerRepo {
+	return &CustomerRepo{DB: db}
 }
 
 // inserts a new customer
