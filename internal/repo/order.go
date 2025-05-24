@@ -23,7 +23,7 @@ func NewOrderRepo(conn *pgx.Conn) *OrderRepo {
 	return &OrderRepo{DB: conn}
 }
 
-// CreateOrder inserts a new order
+// inserts a new order
 func (r *OrderRepo) CreateOrder(ctx context.Context, customerID int, status string) (int, error) {
 	var id int
 	err := r.DB.QueryRow(ctx,
@@ -36,7 +36,7 @@ func (r *OrderRepo) CreateOrder(ctx context.Context, customerID int, status stri
 	return id, nil
 }
 
-// GetOrder retrieves an order by ID
+// retrieves an order by ID
 func (r *OrderRepo) GetOrder(ctx context.Context, id int) (*Order, error) {
 	var o Order
 	err := r.DB.QueryRow(ctx,
@@ -49,7 +49,7 @@ func (r *OrderRepo) GetOrder(ctx context.Context, id int) (*Order, error) {
 	return &o, nil
 }
 
-// ListOrders lists all orders
+// lists all orders
 func (r *OrderRepo) ListOrders(ctx context.Context) ([]Order, error) {
 	rows, err := r.DB.Query(ctx,
 		`SELECT id, customer_id, order_date, status FROM orders`)
@@ -69,7 +69,7 @@ func (r *OrderRepo) ListOrders(ctx context.Context) ([]Order, error) {
 	return orders, nil
 }
 
-// ListOrdersByCustomer returns all orders made by a specific customer
+// returns all orders made by a specific customer
 func (r *OrderRepo) ListOrdersByCustomer(ctx context.Context, customerID int) ([]Order, error) {
 	rows, err := r.DB.Query(ctx,
 		`SELECT id, customer_id, order_date, status FROM orders WHERE customer_id = $1`,
@@ -91,7 +91,7 @@ func (r *OrderRepo) ListOrdersByCustomer(ctx context.Context, customerID int) ([
 	return orders, nil
 }
 
-// UpdateOrderStatus updates the status of a given order
+// updates the status of a given order
 func (r *OrderRepo) UpdateOrderStatus(ctx context.Context, orderID int, status string) error {
 	cmdTag, err := r.DB.Exec(ctx,
 		`UPDATE orders SET status = $1 WHERE id = $2`,
