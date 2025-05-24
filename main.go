@@ -11,6 +11,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/godfreyowidi/simple-ecomm-demo/db"
+	"github.com/godfreyowidi/simple-ecomm-demo/gql-gateway/graph"
 	"github.com/godfreyowidi/simple-ecomm-demo/gql-gateway/resolvers"
 	"github.com/godfreyowidi/simple-ecomm-demo/internal/repo"
 	"github.com/joho/godotenv"
@@ -35,6 +36,7 @@ func main() {
 	customerRepo := repo.NewCustomerRepo(database.Pool)
 	orderRepo := repo.NewOrderRepo(database.Pool)
 	orderItemRepo := repo.NewOrderItemRepo(database.Pool)
+	createCategoryRepo := repo.NewCategoryRepo(database.Pool)
 
 	// Construct the resolver with all dependencies
 	resolver := &resolvers.Resolver{
@@ -42,6 +44,7 @@ func main() {
 		CustomerRepo:  customerRepo,
 		OrderRepo:     orderRepo,
 		OrderItemRepo: orderItemRepo,
+		CategoryRepo:  createCategoryRepo,
 	}
 
 	// GraphQL server setup

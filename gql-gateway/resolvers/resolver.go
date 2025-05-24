@@ -7,4 +7,5 @@ type Resolver struct {
 	CustomerRepo  *repo.CustomerRepo
 	OrderRepo     *repo.OrderRepo
 	OrderItemRepo *repo.OrderItemRepo
+	CategoryRepo  *repo.CategoryRepo
 }

@@ -1,10 +1,10 @@
 # gqlgen.yml
 schema:
-  - gql-gateway/schema/*.graphqls
+  - gql-gateway/schemas/*.graphqls
 
 exec:
-  filename: gql-gateway/graph/generated/generated.go
-  package: generated
+  filename: gql-gateway/graph/generated.go
+  package: graph
 
 model:
   filename: gql-gateway/models/models_gen.go

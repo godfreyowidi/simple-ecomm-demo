@@ -3,17 +3,10 @@ package repo
 import (
 	"context"
 	"fmt"
-	"time"
 
+	"github.com/godfreyowidi/simple-ecomm-demo/models"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-type Order struct {
-	ID         int
-	CustomerID int
-	OrderDate  time.Time
-	Status     string
-}
 
 type OrderRepo struct {
 	DB *pgxpool.Pool
@@ -23,22 +16,44 @@ func NewOrderRepo(db *pgxpool.Pool) *OrderRepo {
 	return &OrderRepo{DB: db}
 }
 
-// inserts a new order
-func (r *OrderRepo) CreateOrder(ctx context.Context, customerID int, status string) (int, error) {
-	var id int
-	err := r.DB.QueryRow(ctx,
-		`INSERT INTO orders (customer_id, status) VALUES ($1, $2) RETURNING id`,
-		customerID, status,
-	).Scan(&id)
+// inserts a new order and associated items
+func (r *OrderRepo) CreateOrder(ctx context.Context, customerID int, items []models.OrderItemInput) (*models.Order, error) {
+	tx, err := r.DB.Begin(ctx)
 	if err != nil {
-		return 0, fmt.Errorf("create order: %w", err)
+		return nil, err
 	}
-	return id, nil
+	defer tx.Rollback(ctx)
+
+	var order models.Order
+	err = tx.QueryRow(ctx,
+		`INSERT INTO orders (customer_id) VALUES ($1) RETURNING id, customer_id, order_date, status`,
+		customerID,
+	).Scan(&order.ID, &order.CustomerID, &order.OrderDate, &order.Status)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, item := range items {
+		_, err := tx.Exec(ctx,
+			`INSERT INTO order_items (order_id, product_id, quantity, price)
+			 VALUES ($1, $2, $3, $4)`,
+			order.ID, item.ProductID, item.Quantity, item.Price,
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+
+	return &order, nil
 }
 
 // retrieves an order by ID
-func (r *OrderRepo) GetOrder(ctx context.Context, id int) (*Order, error) {
-	var o Order
+func (r *OrderRepo) GetOrder(ctx context.Context, id int) (*models.Order, error) {
+	var o models.Order
 	err := r.DB.QueryRow(ctx,
 		`SELECT id, customer_id, order_date, status FROM orders WHERE id = $1`,
 		id,
@@ -50,7 +65,7 @@ func (r *OrderRepo) GetOrder(ctx context.Context, id int) (*Order, error) {
 }
 
 // lists all orders
-func (r *OrderRepo) ListOrders(ctx context.Context) ([]Order, error) {
+func (r *OrderRepo) ListOrders(ctx context.Context) ([]models.Order, error) {
 	rows, err := r.DB.Query(ctx,
 		`SELECT id, customer_id, order_date, status FROM orders`)
 	if err != nil {
@@ -58,9 +73,9 @@ func (r *OrderRepo) ListOrders(ctx context.Context) ([]Order, error) {
 	}
 	defer rows.Close()
 
-	var orders []Order
+	var orders []models.Order
 	for rows.Next() {
-		var o Order
+		var o models.Order
 		if err := rows.Scan(&o.ID, &o.CustomerID, &o.OrderDate, &o.Status); err != nil {
 			return nil, err
 		}
@@ -70,7 +85,7 @@ func (r *OrderRepo) ListOrders(ctx context.Context) ([]Order, error) {
 }
 
 // returns all orders made by a specific customer
-func (r *OrderRepo) ListOrdersByCustomer(ctx context.Context, customerID int) ([]Order, error) {
+func (r *OrderRepo) ListOrdersByCustomer(ctx context.Context, customerID int) ([]models.Order, error) {
 	rows, err := r.DB.Query(ctx,
 		`SELECT id, customer_id, order_date, status FROM orders WHERE customer_id = $1`,
 		customerID,
@@ -80,9 +95,9 @@ func (r *OrderRepo) ListOrdersByCustomer(ctx context.Context, customerID int) ([
 	}
 	defer rows.Close()
 
-	var orders []Order
+	var orders []models.Order
 	for rows.Next() {
-		var o Order
+		var o models.Order
 		if err := rows.Scan(&o.ID, &o.CustomerID, &o.OrderDate, &o.Status); err != nil {
 			return nil, err
 		}

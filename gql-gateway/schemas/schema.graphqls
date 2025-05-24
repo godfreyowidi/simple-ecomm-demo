@@ -1,28 +1,89 @@
-# GraphQL schema example
-#
-# https://gqlgen.com/getting-started/
+# ==== OBJECT TYPES ====
 
-type Todo {
-  id: ID!
-  text: String!
-  done: Boolean!
-  user: User!
-}
-
-type User {
+type Category {
   id: ID!
   name: String!
+  parent: Category
 }
+
+type Product {
+  id: ID!
+  name: String!
+  description: String
+  price: Float!
+  category: Category
+}
+
+type Customer {
+  id: ID!
+  name: String!
+  email: String!
+  createdAt: String!
+}
+
+type OrderItem {
+  id: ID!
+  product: Product!
+  quantity: Int!
+  price: Float!
+}
+
+type Order {
+  id: ID!
+  customer: Customer!
+  orderDate: String!
+  status: String!
+  items: [OrderItem!]!
+}
+
+# ==== INPUT TYPES ====
+
+input CategoryInput {
+  name: String!
+  parentID: ID
+}
+
+input ProductInput {
+  name: String!
+  description: String
+  price: Float!
+  categoryID: ID
+}
+
+input CustomerInput {
+  name: String!
+  email: String!
+}
+
+input OrderItemInput {
+  productID: ID!
+  quantity: Int!
+  price: Float!
+}
+
+input OrderInput {
+  customerID: ID!
+  items: [OrderItemInput!]!
+}
+
+# ==== QUERY ROOT ====
 
 type Query {
-  todos: [Todo!]!
+  products: [Product!]!
+  product(id: ID!): Product
+  customers: [Customer!]!
+  customer(id: ID!): Customer
+  orders: [Order!]!
+  order(id: ID!): Order
+  averagePriceByCategory(categoryID: ID!): Float!
 }
 
-input NewTodo {
-  text: String!
-  userId: String!
-}
+# ==== MUTATION ROOT ====
 
 type Mutation {
-  createTodo(input: NewTodo!): Todo!
+  createCategory(input: CategoryInput!): Category!
+  createProduct(input: ProductInput!): Product!
+  createCustomer(input: CustomerInput!): Customer!
+  createOrder(input: OrderInput!): Order!
+  updateOrderStatus(orderID: ID!, status: String!): Boolean!
 }
