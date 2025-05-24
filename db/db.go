@@ -1,28 +1,33 @@
 package db
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"os"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var DB *sql.DB
-
-func InitDB() error {
-	connStr := os.Getenv("DATABASE_URL")
-	if connStr == "" {
-		return fmt.Errorf("DATABASE_URL not set")
-	}
-	var err error
-	DB, err = sql.Open("postgres", connStr)
-	if err != nil {
-		return err
-	}
-	return DB.Ping()
+type PostgresDB struct {
+	Pool *pgxpool.Pool
 }
 
-func CloseDB() {
-	if DB != nil {
-		DB.Close()
+func NewPostgresDB() (*PostgresDB, error) {
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		return nil, fmt.Errorf("DATABASE_URL environment variable not sent")
 	}
+	config, err := pgxpool.ParseConfig(dbURL)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse database URL: %w", err)
+	}
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create database pool: %w", err)
+	}
+	return &PostgresDB{Pool: pool}, nil
+}
+
+func (db *PostgresDB) Close() {
+	db.Pool.Close()
 }
