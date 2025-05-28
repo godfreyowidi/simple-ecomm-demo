@@ -107,7 +107,8 @@ func TestCreateOrderFlow(t *testing.T) {
 	p1, _ := repos.ProductRepo.CreateProduct(ctx, "Mouse", nil, 25.00, &cat.ID)
 	p2, _ := repos.ProductRepo.CreateProduct(ctx, "Keyboard", nil, 45.00, &cat.ID)
 
-	cust, err := repos.CustomerRepo.CreateCustomer(ctx, "Bob", "bob@example.com")
+	custInput := &models.Customer{FirstName: "Bob"}
+	cust, err := repos.CustomerRepo.CreateCustomer(ctx, custInput)
 	if err != nil {
 		t.Fatalf("create customer: %v", err)
 	}

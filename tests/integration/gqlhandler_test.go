@@ -62,38 +62,57 @@ func TestCreateOrderMutation(t *testing.T) {
 	defer teardown()
 
 	ctx := context.Background()
+
+	// Create category
 	cat, err := repo.NewCategoryRepo(pool).CreateCategory(ctx, "Elec", nil)
 	if err != nil {
 		t.Fatalf("create category: %v", err)
 	}
+
+	// Create product
 	prod, err := repo.NewProductRepo(pool).CreateProduct(ctx, "Phone", nil, 699.99, &cat.ID)
 	if err != nil {
 		t.Fatalf("create product: %v", err)
 	}
-	cust, err := repo.NewCustomerRepo(pool).CreateCustomer(ctx, "Bob", uniqueEmail())
+
+	// Create customer with full details
+	customer := &models.Customer{
+		AuthID:    "auth0|testid",
+		FirstName: "Bob",
+		LastName:  "Smith",
+		Email:     uniqueEmail(),
+		Phone:     "+123456789",
+	}
+	createdCustomer, err := repo.NewCustomerRepo(pool).CreateCustomer(ctx, customer)
 	if err != nil {
 		t.Fatalf("create customer: %v", err)
 	}
 
+	// Start GraphQL server
 	srv := newGraphQLServer(pool)
 	ts := httptest.NewServer(srv)
 	defer ts.Close()
 
 	query := `
 	mutation ($cid: ID!, $pid: ID!) {
-		createOrder(input:{
+		createOrder(input: {
 			customerID: $cid,
-			items:[{productID:$pid, quantity:2, price:699.99}]
+			items: [{ productID: $pid, quantity: 2, price: 699.99 }]
 		}) {
 			id
 			status
-			items { quantity }
+			items {
+				quantity
+			}
 		}
 	}`
 
 	reqBody := map[string]any{
-		"query":     query,
-		"variables": map[string]any{"cid": cust.ID, "pid": prod.ID},
+		"query": query,
+		"variables": map[string]any{
+			"cid": fmt.Sprintf("%d", createdCustomer.ID), // send as string
+			"pid": fmt.Sprintf("%d", prod.ID),
+		},
 	}
 	b, _ := json.Marshal(reqBody)
 	resp, err := ts.Client().Post(ts.URL, "application/json", bytes.NewReader(b))
@@ -105,8 +124,11 @@ func TestCreateOrderMutation(t *testing.T) {
 	var out struct {
 		Data struct {
 			CreateOrder struct {
+				ID     string
 				Status string
-				Items  []struct{ Quantity int }
+				Items  []struct {
+					Quantity int
+				}
 			}
 		}
 		Errors json.RawMessage
@@ -114,12 +136,11 @@ func TestCreateOrderMutation(t *testing.T) {
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-
 	if len(out.Errors) != 0 {
 		t.Fatalf("got errors: %s", string(out.Errors))
 	}
 	if out.Data.CreateOrder.Status != "pending" || out.Data.CreateOrder.Items[0].Quantity != 2 {
-		t.Errorf("bad result: %+v", out.Data.CreateOrder)
+		t.Errorf("unexpected result: %+v", out.Data.CreateOrder)
 	}
 }
 
@@ -196,7 +217,13 @@ func TestMakeOrdersForGQL(t *testing.T) {
 		t.Fatalf("create product 2: %v", err)
 	}
 
-	cust, err := repo.NewCustomerRepo(pool).CreateCustomer(ctx, "Alice", uniqueEmail())
+	cust, err := repo.NewCustomerRepo(pool).CreateCustomer(ctx, &models.Customer{
+		AuthID:    "auth0|alice123",
+		FirstName: "Alice",
+		LastName:  "Test",
+		Email:     uniqueEmail(),
+		Phone:     "+1234567890",
+	})
 	if err != nil {
 		t.Fatalf("create customer: %v", err)
 	}
