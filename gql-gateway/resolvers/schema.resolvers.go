@@ -7,13 +7,63 @@ package resolvers
 import (
 	"context"
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
 	"github.com/godfreyowidi/simple-ecomm-demo/gql-gateway/graph"
 	"github.com/godfreyowidi/simple-ecomm-demo/gql-gateway/models"
-	simplemodels "github.com/godfreyowidi/simple-ecomm-demo/models"
+	rootModels "github.com/godfreyowidi/simple-ecomm-demo/models"
+	"github.com/godfreyowidi/simple-ecomm-demo/pkg"
 )
+
+// CustomerLogin is the resolver for the customerLogin field.
+func (r *mutationResolver) CustomerLogin(ctx context.Context, identifier string, password string) (*models.AuthToken, error) {
+	// Step 1: Find customer by email or phone
+	customer, err := r.CustomerRepo.FindByEmailOrPhone(ctx, identifier)
+	if err != nil {
+		return nil, fmt.Errorf("invalid credentials")
+	}
+
+	// Step 2: Login with email + password (required by Auth0)
+	tokenResp, err := pkg.CustomerLogin(ctx, customer.Email, password)
+	if err != nil {
+		return nil, fmt.Errorf("login failed: %w", err)
+	}
+
+	// Step 3: Return GraphQL AuthToken
+	return &models.AuthToken{
+		AccessToken: tokenResp.AccessToken,
+		IDToken:     &tokenResp.IDToken,
+		ExpiresIn:   &tokenResp.ExpiresIn,
+	}, nil
+}
+
+// CreateCustomer is the resolver for the createCustomer field.
+func (r *mutationResolver) CreateCustomer(ctx context.Context, input models.RegisterInput) (*models.Customer, error) {
+	// Convert gql-gateway RegisterInput to pkg.RegisterInput
+	registerInput := pkg.RegisterInput{
+		FirstName: input.FirstName,
+		LastName:  input.LastName,
+		Email:     input.Email,
+		Phone:     input.Phone,
+		Password:  input.Password,
+	}
+
+	customer, err := r.Resolver.RegisterHandler.Register(ctx, registerInput)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.Customer{
+		ID:        strconv.Itoa(customer.ID),
+		FirstName: customer.FirstName,
+		LastName:  customer.LastName,
+		Email:     customer.Email,
+		Phone:     customer.Phone,
+		CreatedAt: customer.CreatedAt.Format(time.RFC3339),
+	}, nil
+}
 
 // resolver for the createCategory field
 func (r *mutationResolver) CreateCategory(ctx context.Context, input models.CategoryInput) (*models.Category, error) {
@@ -70,27 +120,6 @@ func (r *mutationResolver) CreateProduct(ctx context.Context, input models.Produ
 	}, nil
 }
 
-// CreateCustomer is the resolver for the createCustomer field.
-func (r *mutationResolver) CreateCustomer(ctx context.Context, input models.CustomerInput) (*models.Customer, error) {
-	id, err := r.Resolver.CustomerRepo.CreateCustomer(ctx, input.Name, input.Email)
-	if err != nil {
-		return nil, err
-	}
-
-	// fetch to get CreatedAt
-	customer, err := r.Resolver.CustomerRepo.GetCustomer(ctx, id.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &models.Customer{
-		ID:        strconv.Itoa(customer.ID),
-		Name:      customer.Name,
-		Email:     customer.Email,
-		CreatedAt: customer.CreatedAt.Format(time.RFC3339),
-	}, nil
-}
-
 // CreateOrder is the resolver for the createOrder field.
 func (r *mutationResolver) CreateOrder(ctx context.Context, input models.OrderInput) (*models.Order, error) {
 	customerID, err := strconv.Atoi(input.CustomerID)
@@ -98,45 +127,24 @@ func (r *mutationResolver) CreateOrder(ctx context.Context, input models.OrderIn
 		return nil, err
 	}
 
-	// Prepare order items for creation
-	var repoOrderItemsInput []simplemodels.OrderItemInput
+	// Prepare order items for the repository
+	var repoOrderItemsInput []rootModels.OrderItemInput
 	for _, item := range input.Items {
 		productID, err := strconv.Atoi(item.ProductID)
 		if err != nil {
 			return nil, err
 		}
-		repoOrderItemsInput = append(repoOrderItemsInput, simplemodels.OrderItemInput{
+		repoOrderItemsInput = append(repoOrderItemsInput, rootModels.OrderItemInput{
 			ProductID: productID,
 			Quantity:  item.Quantity,
 			Price:     item.Price,
 		})
 	}
 
-	// Create the order with items
+	// Create the order
 	orderID, err := r.Resolver.OrderRepo.CreateOrder(ctx, customerID, repoOrderItemsInput)
 	if err != nil {
 		return nil, err
-	}
-
-	// Build order item models
-	var items []*models.OrderItem
-	for _, itemInput := range input.Items {
-		productID, err := strconv.Atoi(itemInput.ProductID)
-		if err != nil {
-			return nil, err
-		}
-
-		itemID, err := r.Resolver.OrderItemRepo.CreateOrderItem(ctx, orderID.ID, productID, itemInput.Quantity, itemInput.Price)
-		if err != nil {
-			return nil, err
-		}
-
-		items = append(items, &models.OrderItem{
-			ID:       strconv.Itoa(itemID.ID),
-			Product:  &models.Product{ID: itemInput.ProductID},
-			Quantity: itemInput.Quantity,
-			Price:    itemInput.Price,
-		})
 	}
 
 	// Fetch the full order
@@ -145,20 +153,46 @@ func (r *mutationResolver) CreateOrder(ctx context.Context, input models.OrderIn
 		return nil, err
 	}
 
-	// Fetch the customer (required for non-null `customer` field)
+	// Fetch the customer for the order
 	customer, err := r.Resolver.CustomerRepo.GetCustomer(ctx, customerID)
 	if err != nil {
 		return nil, err
 	}
 
+	// 📨 Send SMS after order is successfully created
+	smsService, err := pkg.NewSMSService()
+	if err != nil {
+		log.Printf("failed to initialize SMS service: %v", err)
+	} else {
+		fullName := fmt.Sprintf("%s %s", customer.FirstName, customer.LastName)
+		if err := smsService.SendOrderConfirmationSMS(customer.Phone, fullName); err != nil {
+			log.Printf("failed to send SMS: %v", err)
+		}
+	}
+
+	// Build gqlgen model order items
+	var gqlOrderItems []*models.OrderItem
+	for _, item := range repoOrderItemsInput {
+		gqlOrderItems = append(gqlOrderItems, &models.OrderItem{
+			ID:       "",
+			Product:  &models.Product{ID: strconv.Itoa(item.ProductID)},
+			Quantity: item.Quantity,
+			Price:    item.Price,
+		})
+	}
+
 	return &models.Order{
-		ID:     strconv.Itoa(order.ID),
-		Status: order.Status,
-		Items:  items,
+		ID:        strconv.Itoa(order.ID),
+		Status:    order.Status,
+		OrderDate: order.OrderDate.Format(time.RFC3339),
+		Items:     gqlOrderItems,
 		Customer: &models.Customer{
-			ID:    strconv.Itoa(customer.ID),
-			Name:  customer.Name,
-			Email: customer.Email,
+			ID:        strconv.Itoa(customer.ID),
+			FirstName: customer.FirstName,
+			LastName:  customer.LastName,
+			Email:     customer.Email,
+			Phone:     customer.Phone,
+			CreatedAt: customer.CreatedAt.Format(time.RFC3339),
 		},
 	}, nil
 }
@@ -167,12 +201,13 @@ func (r *mutationResolver) CreateOrder(ctx context.Context, input models.OrderIn
 func (r *mutationResolver) UpdateOrderStatus(ctx context.Context, orderID string, status string) (bool, error) {
 	id, err := strconv.Atoi(orderID)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("invalid order ID: %w", err)
 	}
 
+	// Update the order status in the repository
 	err = r.Resolver.OrderRepo.UpdateOrderStatus(ctx, id, status)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to update order status: %w", err)
 	}
 
 	return true, nil
@@ -254,7 +289,7 @@ func (r *queryResolver) Customer(ctx context.Context, id string) (*models.Custom
 
 	customer := &models.Customer{
 		ID:        strconv.Itoa(c.ID),
-		Name:      c.Name,
+		FirstName: c.FirstName,
 		Email:     c.Email,
 		CreatedAt: c.CreatedAt.Format(time.RFC3339),
 	}

@@ -16,8 +16,11 @@ type Product {
 
 type Customer {
   id: ID!
-  name: String!
+  authID: String!
+  firstName: String!
+  lastName: String!
   email: String!
+  phone: String!
   createdAt: String!
 }
 
@@ -50,9 +53,12 @@ input ProductInput {
   categoryID: ID
 }
 
-input CustomerInput {
-  name: String!
+input RegisterInput {
+  firstName: String!
+  lastName: String!
   email: String!
+  phone: String!
+  password: String!
 }
 
 input OrderItemInput {
@@ -64,6 +70,12 @@ input OrderItemInput {
 input OrderInput {
   customerID: ID!
   items: [OrderItemInput!]!
+}
+
+type AuthToken {
+  accessToken: String!
+  idToken: String
+  expiresIn: Int
 }
 
 # ==== QUERY ROOT ====
@@ -81,9 +93,10 @@ type Query {
 # ==== MUTATION ROOT ====
 
 type Mutation {
+  customerLogin(identifier: String!, password: String!): AuthToken!
+  createCustomer(input: RegisterInput!): Customer!
   createCategory(input: CategoryInput!): Category!
   createProduct(input: ProductInput!): Product!
-  createCustomer(input: CustomerInput!): Customer!
   createOrder(input: OrderInput!): Order!
   updateOrderStatus(orderID: ID!, status: String!): Boolean!
 }

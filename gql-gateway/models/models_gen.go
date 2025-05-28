@@ -2,6 +2,12 @@
 
 package models
 
+type AuthToken struct {
+	AccessToken string  `json:"accessToken"`
+	IDToken     *string `json:"idToken,omitempty"`
+	ExpiresIn   *int    `json:"expiresIn,omitempty"`
+}
+
 type Category struct {
 	ID     string    `json:"id"`
 	Name   string    `json:"name"`
@@ -15,14 +21,12 @@ type CategoryInput struct {
 
 type Customer struct {
 	ID        string `json:"id"`
-	Name      string `json:"name"`
+	AuthID    string `json:"authID"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
 	Email     string `json:"email"`
+	Phone     string `json:"phone"`
 	CreatedAt string `json:"createdAt"`
-}
-
-type CustomerInput struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
 }
 
 type Mutation struct {
@@ -70,4 +74,12 @@ type ProductInput struct {
 }
 
 type Query struct {
+}
+
+type RegisterInput struct {
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email"`
+	Phone     string `json:"phone"`
+	Password  string `json:"password"`
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/godfreyowidi/simple-ecomm-demo/gql-gateway/graph"
 	"github.com/godfreyowidi/simple-ecomm-demo/gql-gateway/resolvers"
 	"github.com/godfreyowidi/simple-ecomm-demo/internal/repo"
+	"github.com/godfreyowidi/simple-ecomm-demo/pkg"
 	"github.com/joho/godotenv"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -38,13 +39,19 @@ func main() {
 	orderItemRepo := repo.NewOrderItemRepo(database.Pool)
 	createCategoryRepo := repo.NewCategoryRepo(database.Pool)
 
+	// Initialize RegisterHandler
+	registerHandler := &pkg.RegisterHandler{
+		CustomerRepo: customerRepo,
+	}
+
 	// Construct the resolver with all dependencies
 	resolver := &resolvers.Resolver{
-		ProductRepo:   productRepo,
-		CustomerRepo:  customerRepo,
-		OrderRepo:     orderRepo,
-		OrderItemRepo: orderItemRepo,
-		CategoryRepo:  createCategoryRepo,
+		ProductRepo:     productRepo,
+		CustomerRepo:    customerRepo,
+		OrderRepo:       orderRepo,
+		OrderItemRepo:   orderItemRepo,
+		CategoryRepo:    createCategoryRepo,
+		RegisterHandler: registerHandler,
 	}
 
 	// GraphQL server setup
@@ -61,8 +68,10 @@ func main() {
 		Cache: lru.New[string](100),
 	})
 
-	http.Handle("/", playground.Handler("GraphQL Playground", "/query"))
-	http.Handle("/query", srv)
+	mux := http.NewServeMux()
+	mux.Handle("/public-query", srv)
+	mux.Handle("/query", pkg.AuthMiddleware(srv))
+	mux.Handle("/", playground.Handler("GraphQL Playground", "/public-query"))
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -70,5 +79,5 @@ func main() {
 	}
 
 	log.Printf("🚀 Server running at http://localhost:%s/", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
