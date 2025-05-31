@@ -1,6 +1,9 @@
-.PHONY: up down rebuild migrate test init-db drop-test-db reset-test-db test-migrate
+include .env
+export
 
-# Docker Commands
+.PHONY: up down rebuild migrate migrate-test test init-db drop-test-db reset-test-db reset
+
+# Docker Compose Controls
 up:
 	docker compose up -d
 
@@ -12,31 +15,28 @@ rebuild:
 	docker compose build
 	docker compose up -d
 
-# Run migrations using migrate container (on savanna_test DB)
+# Run dev migrations
 migrate:
 	docker compose run --rm migrate
 
-# Init script is already baked into docker-entrypoint; this is optional now.
-init-db:
-	@echo "Test DB 'savanna_test' will be created automatically via docker-compose entrypoint."
+# Run test migrations
+migrate-test:
+	docker compose run --rm migrate-test
+
+# Reset everything (DB, app, migrations)
+reset:
+	docker compose down -v
+	docker compose build
+	docker compose up -d
 
 # Drop test DB manually
 drop-test-db:
 	docker exec -i savanna-db psql -U postgres -c "DROP DATABASE IF EXISTS savanna_test;"
 
-# Reset test DB (drop + recreate)
-reset-test-db: drop-test-db up migrate
+# Reset test DB only
+reset-test-db: drop-test-db up migrate-test
 
-# Run unit tests against savanna_test
+# Run tests
 test:
 	@echo "Running tests on: ${TEST_DATABASE_URL}"
 	@TEST_DATABASE_URL=${TEST_DATABASE_URL} go test ./internal/repo/... -v
-
-# Manually run migrations on savanna_test (host-based)
-test-migrate:
-	docker run --rm \
-	  -v ${PWD}/migrations:/migrations \
-	  migrate/migrate \
-	  -path=/migrations \
-	  -database "postgres://postgres:securepass@localhost:5434/savanna_test?sslmode=disable" \
-	  up

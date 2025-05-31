@@ -4,6 +4,7 @@ type Category {
   id: ID!
   name: String!
   parent: Category
+  children: [Category!]!
 }
 
 type Product {
@@ -12,6 +13,16 @@ type Product {
   description: String
   price: Float!
   category: Category
+}
+
+type ProductSubCategory {
+  name: String!
+  products: [Product!]!
+}
+
+type ProductCatalog {
+  topCategoryName: String!
+  subCategories: [ProductSubCategory!]!
 }
 
 type Customer {
@@ -83,11 +94,14 @@ type AuthToken {
 type Query {
   products: [Product!]!
   product(id: ID!): Product
+  categories: [Category!]!
+  category(id: ID!): Category
   customers: [Customer!]!
   customer(id: ID!): Customer
   orders: [Order!]!
   order(id: ID!): Order
   averagePriceByCategory(categoryID: ID!): Float!
+  productCatalog: [ProductCatalog!]!
 }
 
 # ==== MUTATION ROOT ====

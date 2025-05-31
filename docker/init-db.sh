@@ -1,23 +1,19 @@
 #!/bin/bash
 set -e
 
-# we wait for Postgres to start
-until pg_isready -U postgres; do
-  echo "Waiting for postgres..."
-  sleep 2
+echo "⏳ Waiting for PostgreSQL to become ready..."
+until pg_isready -U "$POSTGRES_USER"; do
+  sleep 1
 done
+echo "✅ PostgreSQL is ready."
 
-# we create savanna_test if not exists
-psql -U postgres <<'EOF'
-DO $$
-BEGIN
-   IF NOT EXISTS (
-      SELECT FROM pg_database WHERE datname = 'savanna_test'
-   ) THEN
-      CREATE DATABASE savanna_test;
-   END IF;
-END
-$$;
-EOF
+# Create savanna_test if it doesn't exist
+EXISTS=$(psql -U "$POSTGRES_USER" -tc "SELECT 1 FROM pg_database WHERE datname = 'savanna_test';" | tr -d '[:space:]')
 
-echo "✅ savanna_test database is ready."
+if [ "$EXISTS" != "1" ]; then
+  echo "🔧 Creating 'savanna_test' database..."
+  createdb -U "$POSTGRES_USER" savanna_test
+  echo "✅ 'savanna_test' created."
+else
+  echo "ℹ️  'savanna_test' already exists."
+fi

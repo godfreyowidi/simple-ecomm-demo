@@ -12,4 +12,5 @@ type Resolver struct {
 	OrderItemRepo   *repo.OrderItemRepo
 	CategoryRepo    *repo.CategoryRepo
 	RegisterHandler *pkg.RegisterHandler
+	CatalogRepo     *repo.CatalogRepo
 }

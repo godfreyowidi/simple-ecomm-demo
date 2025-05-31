@@ -9,9 +9,10 @@ type AuthToken struct {
 }
 
 type Category struct {
-	ID     string    `json:"id"`
-	Name   string    `json:"name"`
-	Parent *Category `json:"parent,omitempty"`
+	ID       string      `json:"id"`
+	Name     string      `json:"name"`
+	Parent   *Category   `json:"parent,omitempty"`
+	Children []*Category `json:"children"`
 }
 
 type CategoryInput struct {
@@ -66,11 +67,21 @@ type Product struct {
 	Category    *Category `json:"category,omitempty"`
 }
 
+type ProductCatalog struct {
+	TopCategoryName string                `json:"topCategoryName"`
+	SubCategories   []*ProductSubCategory `json:"subCategories"`
+}
+
 type ProductInput struct {
 	Name        string  `json:"name"`
 	Description *string `json:"description,omitempty"`
 	Price       float64 `json:"price"`
 	CategoryID  *string `json:"categoryID,omitempty"`
+}
+
+type ProductSubCategory struct {
+	Name     string     `json:"name"`
+	Products []*Product `json:"products"`
 }
 
 type Query struct {

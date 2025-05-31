@@ -13,6 +13,7 @@ import (
 
 	"github.com/godfreyowidi/simple-ecomm-demo/gql-gateway/graph"
 	"github.com/godfreyowidi/simple-ecomm-demo/gql-gateway/models"
+	gqlModels "github.com/godfreyowidi/simple-ecomm-demo/gql-gateway/models"
 	rootModels "github.com/godfreyowidi/simple-ecomm-demo/models"
 	"github.com/godfreyowidi/simple-ecomm-demo/pkg"
 )
@@ -288,6 +289,16 @@ func (r *queryResolver) Product(ctx context.Context, id string) (*models.Product
 	return product, nil
 }
 
+// Categories is the resolver for the categories field.
+func (r *queryResolver) Categories(ctx context.Context) ([]*models.Category, error) {
+	panic(fmt.Errorf("not implemented: Categories - categories"))
+}
+
+// Category is the resolver for the category field.
+func (r *queryResolver) Category(ctx context.Context, id string) (*models.Category, error) {
+	panic(fmt.Errorf("not implemented: Category - category"))
+}
+
 // Customers is the resolver for the customers field.
 func (r *queryResolver) Customers(ctx context.Context) ([]*models.Customer, error) {
 	panic(fmt.Errorf("not implemented: Customers - customers"))
@@ -408,6 +419,41 @@ func (r *queryResolver) AveragePriceByCategory(ctx context.Context, categoryID s
 	}
 
 	return avgPrice, nil
+}
+
+// ProductCatalog is the resolver for the productCatalog field.
+func (r *queryResolver) ProductCatalog(ctx context.Context) ([]*gqlModels.ProductCatalog, error) {
+	// Fetch from repository
+	catalogs, err := r.Resolver.CatalogRepo.GetProductCatalog(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch product catalog: %w", err)
+	}
+
+	var gqlCatalogs []*gqlModels.ProductCatalog
+	for _, c := range catalogs {
+		var gqlSubCategories []*gqlModels.ProductSubCategory
+		for _, sub := range c.SubCategories {
+			var gqlProducts []*gqlModels.Product
+			for _, p := range sub.Products {
+				gqlProducts = append(gqlProducts, &gqlModels.Product{
+					ID:          strconv.Itoa(p.ID),
+					Name:        p.Name,
+					Description: p.Description,
+					Price:       p.Price,
+				})
+			}
+			gqlSubCategories = append(gqlSubCategories, &gqlModels.ProductSubCategory{
+				Name:     sub.Name,
+				Products: gqlProducts,
+			})
+		}
+		gqlCatalogs = append(gqlCatalogs, &gqlModels.ProductCatalog{
+			TopCategoryName: c.TopCategoryName,
+			SubCategories:   gqlSubCategories,
+		})
+	}
+
+	return gqlCatalogs, nil
 }
 
 // Mutation returns graph.MutationResolver implementation.

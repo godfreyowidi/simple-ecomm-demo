@@ -14,7 +14,6 @@ CREATE TABLE products (
     category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL
 );
 
--- Create customers
 -- Create customers table
 CREATE TABLE customers (
     id SERIAL PRIMARY KEY,

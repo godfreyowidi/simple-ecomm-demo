@@ -38,6 +38,7 @@ func main() {
 	orderRepo := repo.NewOrderRepo(database.Pool)
 	orderItemRepo := repo.NewOrderItemRepo(database.Pool)
 	createCategoryRepo := repo.NewCategoryRepo(database.Pool)
+	catalogRepo := repo.NewCatalogRepo(database.Pool)
 
 	// Initialize RegisterHandler
 	registerHandler := &pkg.RegisterHandler{
@@ -52,6 +53,7 @@ func main() {
 		OrderItemRepo:   orderItemRepo,
 		CategoryRepo:    createCategoryRepo,
 		RegisterHandler: registerHandler,
+		CatalogRepo:     catalogRepo,
 	}
 
 	// GraphQL server setup

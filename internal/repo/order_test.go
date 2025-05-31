@@ -22,13 +22,15 @@ func TestCreateOrder(t *testing.T) {
 	orderRepo := repo.NewOrderRepo(db)
 
 	// create customer
+	// create customer
 	customer, err := customerRepo.CreateCustomer(ctx, &models.Customer{
-		AuthID:    "auth0|order-test-id",
+		AuthID:    "auth0|order-test-" + RandString(8),
 		FirstName: "Order",
 		LastName:  "Tester",
 		Email:     "order_tester_" + RandString(8) + "@example.com",
 		Phone:     "+1111111111",
 	})
+
 	if err != nil {
 		t.Fatalf("failed to create customer: %v", err)
 	}
