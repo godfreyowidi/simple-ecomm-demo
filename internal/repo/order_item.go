@@ -30,7 +30,7 @@ func (r *OrderItemRepo) CreateOrderItem(ctx context.Context, orderID, productID,
 	return &item, nil
 }
 
-// retrieves all items for a specific order
+// get all items for a specific order
 func (r *OrderItemRepo) GetItemsByOrder(ctx context.Context, orderID int) ([]models.OrderItem, error) {
 	rows, err := r.DB.Query(ctx,
 		`SELECT id, order_id, product_id, quantity, price

@@ -16,7 +16,7 @@ func NewOrderRepo(db *pgxpool.Pool) *OrderRepo {
 	return &OrderRepo{DB: db}
 }
 
-// inserts a new order and associated items
+// insert an order with items
 func (r *OrderRepo) CreateOrder(ctx context.Context, customerID int, items []models.OrderItemInput) (*models.Order, error) {
 	tx, err := r.DB.Begin(ctx)
 	if err != nil {
@@ -51,7 +51,7 @@ func (r *OrderRepo) CreateOrder(ctx context.Context, customerID int, items []mod
 	return &order, nil
 }
 
-// retrieves an order by ID
+// get an order by ID
 func (r *OrderRepo) GetOrder(ctx context.Context, id int) (*models.Order, error) {
 	var o models.Order
 	err := r.DB.QueryRow(ctx,
@@ -64,7 +64,7 @@ func (r *OrderRepo) GetOrder(ctx context.Context, id int) (*models.Order, error)
 	return &o, nil
 }
 
-// lists all orders
+// get all orders
 func (r *OrderRepo) ListOrders(ctx context.Context) ([]models.Order, error) {
 	rows, err := r.DB.Query(ctx,
 		`SELECT id, customer_id, order_date, status FROM orders`)
@@ -84,7 +84,7 @@ func (r *OrderRepo) ListOrders(ctx context.Context) ([]models.Order, error) {
 	return orders, nil
 }
 
-// returns all orders made by a specific customer
+// get all orders made by a specific customer
 func (r *OrderRepo) ListOrdersByCustomer(ctx context.Context, customerID int) ([]models.Order, error) {
 	rows, err := r.DB.Query(ctx,
 		`SELECT id, customer_id, order_date, status FROM orders WHERE customer_id = $1`,

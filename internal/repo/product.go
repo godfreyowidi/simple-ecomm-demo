@@ -31,7 +31,7 @@ func (r *ProductRepo) CreateProduct(ctx context.Context, name string, descriptio
 	return &p, nil
 }
 
-// fetches a product by ID
+// get a product by ID
 func (r *ProductRepo) GetProduct(ctx context.Context, id int) (*models.Product, error) {
 	var p models.Product
 	err := r.DB.QueryRow(ctx,

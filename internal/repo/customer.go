@@ -16,7 +16,7 @@ func NewCustomerRepo(db *pgxpool.Pool) *CustomerRepo {
 	return &CustomerRepo{DB: db}
 }
 
-// Inserts a new customer
+// new customer
 func (r *CustomerRepo) CreateCustomer(ctx context.Context, customer *models.Customer) (*models.Customer, error) {
 	err := r.DB.QueryRow(ctx,
 		`INSERT INTO customers (auth_id, first_name, last_name, email, phone)
@@ -38,8 +38,8 @@ func (r *CustomerRepo) CreateCustomer(ctx context.Context, customer *models.Cust
 	return customer, nil
 }
 
-// Fetches a customer by ID
-func (r *CustomerRepo) GetCustomer(ctx context.Context, id int) (*models.Customer, error) {
+// get a customer by ID
+func (r *CustomerRepo) GetCustomerById(ctx context.Context, id int) (*models.Customer, error) {
 	var c models.Customer
 	err := r.DB.QueryRow(ctx,
 		`SELECT id, auth_id, first_name, last_name, email, phone, created_at
@@ -53,7 +53,7 @@ func (r *CustomerRepo) GetCustomer(ctx context.Context, id int) (*models.Custome
 	return &c, nil
 }
 
-// Fetches a customer by email
+// get a customer by email
 func (r *CustomerRepo) GetCustomerByEmail(ctx context.Context, email string) (*models.Customer, error) {
 	var c models.Customer
 	err := r.DB.QueryRow(ctx,
@@ -68,7 +68,7 @@ func (r *CustomerRepo) GetCustomerByEmail(ctx context.Context, email string) (*m
 	return &c, nil
 }
 
-// Returns all customers
+// get all customers
 func (r *CustomerRepo) ListCustomers(ctx context.Context) ([]models.Customer, error) {
 	rows, err := r.DB.Query(ctx,
 		`SELECT id, auth_id, first_name, last_name, email, phone, created_at FROM customers`)
@@ -88,6 +88,7 @@ func (r *CustomerRepo) ListCustomers(ctx context.Context) ([]models.Customer, er
 	return customers, nil
 }
 
+// get customer by email/phone
 func (r *CustomerRepo) FindByEmailOrPhone(ctx context.Context, identifier string) (*models.Customer, error) {
 	query := `
 		SELECT id, email, phone FROM customers 

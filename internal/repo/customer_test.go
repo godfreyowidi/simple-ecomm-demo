@@ -34,10 +34,10 @@ func TestCreateCustomer(t *testing.T) {
 	repo := repo.NewCustomerRepo(db)
 
 	customer := &models.Customer{
-		AuthID:    "auth0|unit-test-id",
+		AuthID:    "auth0|unit-test-" + time.Now().Format("20060102150405.000000000"),
 		FirstName: "Test",
 		LastName:  "User",
-		Email:     "unit_test_" + time.Now().Format("20060102150405") + "@example.com", // Unique
+		Email:     "unit_test_" + time.Now().Format("20060102150405") + "@example.com",
 		Phone:     "+1234567890",
 	}
 

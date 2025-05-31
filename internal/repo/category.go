@@ -16,7 +16,7 @@ func NewCategoryRepo(db *pgxpool.Pool) *CategoryRepo {
 	return &CategoryRepo{DB: db}
 }
 
-// inserts a new category
+// new category
 func (r *CategoryRepo) CreateCategory(ctx context.Context, name string, parentID *int) (*models.Category, error) {
 	var c models.Category
 	err := r.DB.QueryRow(ctx,
@@ -29,8 +29,8 @@ func (r *CategoryRepo) CreateCategory(ctx context.Context, name string, parentID
 	return &c, nil
 }
 
-// fetches a category by ID
-func (r *CategoryRepo) GetCategory(ctx context.Context, id int) (*models.Category, error) {
+// get a category by ID
+func (r *CategoryRepo) GetCategoryById(ctx context.Context, id int) (*models.Category, error) {
 	var c models.Category
 	err := r.DB.QueryRow(ctx,
 		`SELECT id, name, parent_id FROM categories WHERE id = $1`,
@@ -42,7 +42,7 @@ func (r *CategoryRepo) GetCategory(ctx context.Context, id int) (*models.Categor
 	return &c, nil
 }
 
-// returns all categories
+// get all categories
 func (r *CategoryRepo) ListCategories(ctx context.Context) ([]models.Category, error) {
 	rows, err := r.DB.Query(ctx, `SELECT id, name, parent_id FROM categories`)
 	if err != nil {

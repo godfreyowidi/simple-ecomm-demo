@@ -154,7 +154,7 @@ func (r *mutationResolver) CreateOrder(ctx context.Context, input models.OrderIn
 	}
 
 	// Fetch the customer for the order
-	customer, err := r.Resolver.CustomerRepo.GetCustomer(ctx, customerID)
+	customer, err := r.Resolver.CustomerRepo.GetCustomerById(ctx, customerID)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +279,7 @@ func (r *queryResolver) Customer(ctx context.Context, id string) (*models.Custom
 		return nil, fmt.Errorf("invalid customer ID: %w", err)
 	}
 
-	c, err := r.Resolver.CustomerRepo.GetCustomer(ctx, customerID)
+	c, err := r.Resolver.CustomerRepo.GetCustomerById(ctx, customerID)
 	if err != nil {
 		return nil, err
 	}
