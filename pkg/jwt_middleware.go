@@ -14,7 +14,14 @@ var (
 	auth0Audience = os.Getenv("AUTH0_AUDIENCE")
 )
 
+type AuthClaims struct {
+	Email string `json:"email"`
+	Sub   string `json:"sub"`
+}
+
 type contextKey string
+
+const userContextKey contextKey = "user"
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	ctx := context.Background()
@@ -54,4 +61,13 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), contextKey("user"), claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+// UserFromContext extracts AuthClaims from the context
+func UserFromContext(ctx context.Context) (*AuthClaims, bool) {
+	claims, ok := ctx.Value(userContextKey).(AuthClaims)
+	if !ok {
+		return nil, false
+	}
+	return &claims, true
 }

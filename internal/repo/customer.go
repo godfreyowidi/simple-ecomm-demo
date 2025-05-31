@@ -38,6 +38,16 @@ func (r *CustomerRepo) CreateCustomer(ctx context.Context, customer *models.Cust
 	return customer, nil
 }
 
+// FindCustomerIDByAuth0Sub fetches the customer ID by their Auth0 subject (auth_id)
+func (r *CustomerRepo) FindCustomerIDByAuth0Sub(ctx context.Context, sub string) (int, error) {
+	var customerID int
+	err := r.DB.QueryRow(ctx, `SELECT id FROM customers WHERE auth_id = $1`, sub).Scan(&customerID)
+	if err != nil {
+		return 0, fmt.Errorf("find customer by auth_id: %w", err)
+	}
+	return customerID, nil
+}
+
 // get a customer by ID
 func (r *CustomerRepo) GetCustomerById(ctx context.Context, id int) (*models.Customer, error) {
 	var c models.Customer
