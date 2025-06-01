@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: savanna-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: savanna-app
+  template:
+    metadata:
+      labels:
+        app: savanna-app
+    spec:
+      containers:
+        - name: savanna-app
+          image: ghcr.io/<your-github-username>/savanna-app:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: DATABASE_URL
+            - name: AUTH0_DOMAIN
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: AUTH0_DOMAIN
+            - name: AUTH0_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: AUTH0_AUDIENCE
+            - name: AUTH0_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: AUTH0_CLIENT_ID
+            - name: AUTH0_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: AUTH0_CLIENT_SECRET
+            - name: AUTH0_MANAGEMENT_API_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: AUTH0_MANAGEMENT_API_AUDIENCE
+            - name: AT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: AT_API_KEY
+            - name: AT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: AT_USERNAME
+            - name: AT_SHORTCODE
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: AT_SHORTCODE
+            - name: AT_SANDBOX
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: AT_SANDBOX
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20

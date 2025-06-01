@@ -1,0 +1,48 @@
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }} # e.g., godfreyowidi/savanna-app
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout Code
+        uses: actions/checkout@v3
+
+      - name: 🔐 Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐳 Build Docker Image
+        run: |
+          docker build -t $REGISTRY/${{ env.IMAGE_NAME }}:latest .
+
+      - name: 🚀 Push Docker Image
+        run: |
+          docker push $REGISTRY/${{ env.IMAGE_NAME }}:latest
+
+      - name: ⚙️ Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: 🔑 Set up Kubeconfig
+        run: |
+          echo "${{ secrets.KUBECONFIG_DATA }}" | base64 -d > $HOME/.kube/config
+
+      - name: 📦 Apply Kubernetes Resources
+        run: |
+          kubectl apply -f k8s/db-init-configmap.yaml
+          kubectl apply -f k8s/db-service.yaml
+          kubectl apply -f k8s/db-deployment.yaml
+          kubectl apply -f k8s/service.yaml
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/migrate-job.yaml
