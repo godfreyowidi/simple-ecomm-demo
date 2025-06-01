@@ -112,5 +112,3 @@ Make sure your __TEST_DATABASE_URL__ is set.
 ## License
 
 
-
-
