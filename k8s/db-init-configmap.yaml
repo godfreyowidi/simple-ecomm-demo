@@ -1,10 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
-volumes:
-  - name: init-script
-    configMap:
-      name: db-init-script
-      defaultMode: 0755
+metadata:
+  name: db-init-script
 data:
   init-db.sh: |
     #!/bin/bash
