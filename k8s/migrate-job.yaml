@@ -7,8 +7,8 @@ spec:
     spec:
       containers:
         - name: migrate
-          image: migrate-with-files
-          imagePullPolicy: Never
+          image: registry.digitalocean.com/savanna/savanna-app:migrate
+          imagePullPolicy: Always
           command:
             [
               "migrate",

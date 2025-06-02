@@ -10,7 +10,7 @@ permissions:
 
 env:
   REGISTRY: registry.digitalocean.com
-  IMAGE_NAME: savanna/simple-ecomm-demo
+  IMAGE_NAME: savanna/savanna-app
 
 jobs:
   deploy:
@@ -27,13 +27,16 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: 🐳 Build Docker Image
-        run: |
-          docker build -t $REGISTRY/${{ env.IMAGE_NAME }}:latest .
+      - name: 🐳 Build App Image
+        run: docker build -t $REGISTRY/${{ env.IMAGE_NAME }}:latest .
 
-      - name: 🚀 Push Docker Image
+      - name: 🐳 Build Migration Image
+        run: docker build -f Dockerfile.migrate -t $REGISTRY/${{ env.IMAGE_NAME }}:migrate .
+
+      - name: 🚀 Push Docker Images
         run: |
           docker push $REGISTRY/${{ env.IMAGE_NAME }}:latest
+          docker push $REGISTRY/${{ env.IMAGE_NAME }}:migrate
 
       - name: ⚙️ Set up kubectl
         uses: azure/setup-kubectl@v3
@@ -46,6 +49,8 @@ jobs:
       - name: 📦 Apply Kubernetes Resources
         run: |
           kubectl apply -f k8s/db-init-configmap.yaml
+          kubectl apply -f k8s/db-secret.yaml
+          kubectl apply -f k8s/app-secret.yaml
           kubectl apply -f k8s/db-service.yaml
           kubectl apply -f k8s/db-deployment.yaml
           kubectl apply -f k8s/service.yaml

@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: savanna-app
-          image: registry.digitalocean.com/savanna/simple-ecomm-demo:latest
+          image: registry.digitalocean.com/savanna/savanna-app:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

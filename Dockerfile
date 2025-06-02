@@ -1,21 +1,30 @@
-# syntax=docker/dockerfile:1
-FROM golang:1.24.1-alpine AS builder
+# Build stage
+FROM golang:1.24 AS builder
 
-# Set working directory
+
 WORKDIR /app
 
-# Install necessary packages
-RUN apk add --no-cache git
-
-# Copy go mod and sum
+# Copy go.mod and go.sum first for caching dependencies
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy the source
+# Copy all source files
 COPY . .
 
-# Build the app
-RUN go build -o main .
+# Build the Go binary
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o savanna-app ./main.go
 
-# Command to run
-CMD ["/app/main"]
+
+# Final stage: minimal image
+FROM alpine:latest
+
+WORKDIR /app
+
+# Copy the binary from builder stage
+COPY --from=builder /app/savanna-app .
+
+# Expose port
+EXPOSE 8080
+
+# Run the binary
+CMD ["./savanna-app"]

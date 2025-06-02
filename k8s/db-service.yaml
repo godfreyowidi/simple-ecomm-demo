@@ -2,10 +2,14 @@ apiVersion: v1
 kind: Service
 metadata:
   name: savanna-db
+  annotations:
+    service.beta.kubernetes.io/do-loadbalancer-size-unit: "1"
 spec:
+  type: LoadBalancer
   selector:
     app: savanna-db
   ports:
-    - port: 5432
+    - name: postgres
+      protocol: TCP
+      port: 5432
       targetPort: 5432
-  type: ClusterIP
