@@ -15,6 +15,7 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: savanna-app  # 🔗 Connect to GitHub Environment for secrets
 
     steps:
       - name: ⬇️ Checkout Code
@@ -46,11 +47,19 @@ jobs:
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBECONFIG_DATA }}" | base64 -d > $HOME/.kube/config
 
+      - name: 🔐 Create Kubernetes Secret from GitHub Environment Secrets
+        run: |
+          kubectl create secret generic db-secret \
+            --from-literal=POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
+            --from-literal=POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
+            --from-literal=POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
+            --from-literal=DATABASE_URL=${{ secrets.DATABASE_URL }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
       - name: 📦 Apply Kubernetes Resources
         run: |
           kubectl apply -f k8s/db-init-configmap.yaml
-          kubectl apply -f k8s/db-secret.yaml
-          kubectl apply -f k8s/app-secret.yaml
+          kubectl apply -f k8s/app-secret.yaml   # Optional: make this dynamic too if needed
           kubectl apply -f k8s/db-service.yaml
           kubectl apply -f k8s/db-deployment.yaml
           kubectl apply -f k8s/service.yaml
