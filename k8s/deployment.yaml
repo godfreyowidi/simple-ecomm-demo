@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: savanna-app
-          image: ghcr.io/<your-github-username>/savanna-app:latest
+          image: registry.digitalocean.com/savanna/simple-ecomm-demo:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
