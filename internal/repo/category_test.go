@@ -13,7 +13,7 @@ func TestCreateCategory(t *testing.T) {
 
 	repo := repo.NewCategoryRepo(db)
 
-	// top-level category
+	// this is a top-level category
 	cat, err := repo.CreateCategory(context.Background(), "Test Category", nil)
 	if err != nil {
 		t.Fatalf("CreateCategory failed: %v", err)
@@ -29,7 +29,7 @@ func TestCreateCategory(t *testing.T) {
 		t.Errorf("Expected ParentID to be nil, got %v", *cat.ParentID)
 	}
 
-	// sub-category
+	// and a sub-category
 	subCat, err := repo.CreateCategory(context.Background(), "Sub Category", &cat.ID)
 	if err != nil {
 		t.Fatalf("Create sub-category failed: %v", err)

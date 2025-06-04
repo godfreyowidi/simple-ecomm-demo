@@ -21,8 +21,7 @@ func TestCreateOrder(t *testing.T) {
 	categoryRepo := repo.NewCategoryRepo(db)
 	orderRepo := repo.NewOrderRepo(db)
 
-	// create customer
-	// create customer
+	// <> we create customer
 	customer, err := customerRepo.CreateCustomer(ctx, &models.Customer{
 		AuthID:    "auth0|order-test-" + RandString(8),
 		FirstName: "Order",
@@ -35,19 +34,19 @@ func TestCreateOrder(t *testing.T) {
 		t.Fatalf("failed to create customer: %v", err)
 	}
 
-	// create category
+	// <> we create category
 	category, err := categoryRepo.CreateCategory(ctx, "Order Test Category", nil)
 	if err != nil {
 		t.Fatalf("failed to create category: %v", err)
 	}
 
-	// create product
+	// <> we create product
 	product, err := productRepo.CreateProduct(ctx, "Test Product", nil, 49.99, &category.ID)
 	if err != nil {
 		t.Fatalf("failed to create product: %v", err)
 	}
 
-	// create order
+	// <> we create order
 	order, err := orderRepo.CreateOrder(ctx, customer.ID, []models.OrderItemInput{
 		{
 			ProductID: product.ID,
@@ -59,7 +58,7 @@ func TestCreateOrder(t *testing.T) {
 		t.Fatalf("CreateOrder failed: %v", err)
 	}
 
-	// Assertions -- checks
+	// Assertions -- checks TODO use switch
 	if order.ID == 0 {
 		t.Error("expected order to have a non-zero ID")
 	}

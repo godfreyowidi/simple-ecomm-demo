@@ -92,14 +92,14 @@ type AuthToken {
 # ==== QUERY ROOT ====
 
 type Query {
-  products: [Product!]!
-  product(id: ID!): Product
-  categories: [Category!]!
-  category(id: ID!): Category
-  customers: [Customer!]!
-  customer(id: ID!): Customer
-  orders: [Order!]!
-  order(id: ID!): Order
+  getAllProducts: [Product!]!
+  getProduct(id: ID!): Product
+  getAllCategories: [Category!]!
+  getCategory(id: ID!): Category
+  getAllCustomers: [Customer!]!
+  getCustomer(id: ID!): Customer
+  getAllOrders: [Order!]!
+  getOrder(id: ID!): Order
   averagePriceByCategory(categoryID: ID!): Float!
   productCatalog: [ProductCatalog!]!
 }

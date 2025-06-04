@@ -1,5 +1,7 @@
 # E-Commerce Demo Boilerplate
 
+Check out a detailed [medium article](https://godfreyowidi.medium.com/golang-docker-graphql-pgx-kubernetes-digitalocean-in-a-partial-clean-architecture-1070548ba1cb) with explanation showing a step-by-step setup of the project and more. Its a WIP 🙏
+
 This is a ready-to-use boilerplate project made with Go. It follows a clean and organized code structure (called clean architecture) and is good for learning or starting real applications.
 
 This demo helps you:
@@ -30,17 +32,19 @@ This demo helps you:
 - A confirmation SMS is sent to the customer.
 
 ## Technologies Used
-- **Docker** – Runs the app in containers so it works the same everywhere
+- *Docker* – Runs the app in containers so it works the same everywhere
 
-- **Gqlgen** – A tool for building GraphQL APIs in Go
+- *Gqlgen* – A tool for building GraphQL APIs in Go
 
-- **pgx** – A Go library for working with PostgreSQL databases
+- *pgx* – A Go library for working with PostgreSQL databases
 
-- **Africa's Talking** – Used to send SMS messages
+- *Africa's Talking* – Used to send SMS messages
 
-- **PostgreSQL** – The database used to store everything
+- *PostgreSQL* – The database used to store everything
 
-- **Auth0** – Handles authentication (login and user identity)
+- *Auth0* – Handles authentication (login and user identity)
+
+- *DigitalOcean + Kubernetes* - production deployment
 
 ## Project Setup
 
@@ -82,6 +86,35 @@ You must send this token in the Authorization header when making a GraphQL reque
 
 - If the token is missing or invalid, protected GraphQL operations will fail.
 
+### Deploying to Kubernetes with Minikube + DigitalOcean
+This project support conternerized deployment to Kubernetes using Minikube locally and DigitalOcean for production.
+
+#### 1. Start Minikube
+`minikube start --driver=docker`
+#### 2. Enable Docker env
+`eval $(minikube docker-env)`
+#### 3. Build Docker image for local use
+`docker build -t savanna-app .`
+#### 4. Apply Kubernetes configs
+`kubectl apply -f k8s/`
+#### 5. Setup DigitalOcean Container Registry (DOCR)
+`doctl registry login`\
+`doctl registry create savanna`
+#### 6. Tag and push image
+`docker tag savanna-app registry.digitalocean.com/savanna/savanna-app`\
+`docker push registry.digitalocean.com/savanna/savanna-app`
+#### 7. Use DO image in _*deployment.yaml*_
+Update your Kubernetes deployment to use the image:\
+`registry.digitalocean.com/savanna/savanna-app`
+#### 8. Apply Kubernetes secrets 
+`kubectl create secret docker-registry do-registry` \
+`  --docker-server=registry.digitalocean.com` \
+`  --docker-username=your-do-username` \
+`  --docker-password=your-do-api-token`
+#### 9. Migrate the database manually
+`kubectl exec -it <postgres-pod> -- psql -U postgres -c 'CREATE DATABASE savanna;'`\
+`kubectl apply -f k8s/migrate-job.yaml`
+
 ## Running the app
 Start with docker
 
@@ -108,7 +141,11 @@ Make sure your __TEST_DATABASE_URL__ is set.
 ## Known bugs
 
 ## TODOs
+Add retry for SMS failures
+
+Add admin dashboard
 
 ## License
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 

@@ -7,7 +7,7 @@ until pg_isready -U "$POSTGRES_USER"; do
 done
 echo "✅ PostgreSQL is ready."
 
-# Create savanna_test if it doesn't exist
+# we create savanna_test if it doesn't exist
 EXISTS=$(psql -U "$POSTGRES_USER" -tc "SELECT 1 FROM pg_database WHERE datname = 'savanna_test';" | tr -d '[:space:]')
 
 if [ "$EXISTS" != "1" ]; then

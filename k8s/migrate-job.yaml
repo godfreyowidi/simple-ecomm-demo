@@ -5,15 +5,23 @@ metadata:
 spec:
   template:
     spec:
+      imagePullSecrets:
+        - name: do-registry
       containers:
         - name: migrate
-          image: registry.digitalocean.com/savanna/savanna-app:migrate
-          imagePullPolicy: Always
-          command:
-            [
-              "migrate",
-              "-path", "/migrations",
-              "-database", "postgres://postgres:securepass@savanna-db:5432/savanna?sslmode=disable",
-              "up"
-            ]
+          image: migrate/migrate:v4.16.2
+          command: ["migrate"]
+          args:
+            - "-path"
+            - "/migrations"
+            - "-database"
+            - "postgres://postgres:securepass@savanna-db:5432/savanna?sslmode=disable"
+            - "up"
+          volumeMounts:
+            - name: migration-files
+              mountPath: /migrations
       restartPolicy: OnFailure
+      volumes:
+        - name: migration-files
+          configMap:
+            name: migration-sql

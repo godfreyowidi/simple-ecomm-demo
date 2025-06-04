@@ -18,7 +18,7 @@ import (
 var migrationFiles embed.FS
 
 func UpWithDSN(ctx context.Context, dsn string) error {
-	db, err := sql.Open("postgres", dsn) // "postgres" must match lib/pq
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return fmt.Errorf("sql open: %w", err)
 	}

@@ -12,10 +12,13 @@ spec:
       labels:
         app: savanna-app
     spec:
+      imagePullSecrets:
+        - name: do-registry
       containers:
         - name: savanna-app
           image: registry.digitalocean.com/savanna/savanna-app:latest
           imagePullPolicy: Always
+          
           ports:
             - containerPort: 8080
           env:

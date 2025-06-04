@@ -13,26 +13,25 @@ import (
 
 	"github.com/godfreyowidi/simple-ecomm-demo/gql-gateway/graph"
 	"github.com/godfreyowidi/simple-ecomm-demo/gql-gateway/models"
-	gqlModels "github.com/godfreyowidi/simple-ecomm-demo/gql-gateway/models"
 	rootModels "github.com/godfreyowidi/simple-ecomm-demo/models"
 	"github.com/godfreyowidi/simple-ecomm-demo/pkg"
 )
 
 // CustomerLogin is the resolver for the customerLogin field.
 func (r *mutationResolver) CustomerLogin(ctx context.Context, identifier string, password string) (*models.AuthToken, error) {
-	// Step 1: Find customer by email or phone
+	// Find customer by email or phone
 	customer, err := r.CustomerRepo.FindByEmailOrPhone(ctx, identifier)
 	if err != nil {
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
-	// Step 2: Login with email + password (required by Auth0)
+	// Login with email + password (required by Auth0) -> this is still buggy though
 	tokenResp, err := pkg.CustomerLogin(ctx, customer.Email, password)
 	if err != nil {
 		return nil, fmt.Errorf("login failed: %w", err)
 	}
 
-	// Step 3: Return GraphQL AuthToken
+	// Return GraphQL AuthToken
 	return &models.AuthToken{
 		AccessToken: tokenResp.AccessToken,
 		IDToken:     &tokenResp.IDToken,
@@ -123,7 +122,7 @@ func (r *mutationResolver) CreateProduct(ctx context.Context, input models.Produ
 
 // CreateOrder is the resolver for the createOrder field.
 func (r *mutationResolver) CreateOrder(ctx context.Context, input models.OrderInput) (*models.Order, error) {
-	// ✅ Ensure at least one order item
+	// Ensure at least one order item
 	if len(input.Items) == 0 {
 		return nil, fmt.Errorf("at least one order item is required")
 	}
@@ -131,7 +130,7 @@ func (r *mutationResolver) CreateOrder(ctx context.Context, input models.OrderIn
 	var customerID int
 	var err error
 
-	// ✅ Allow input.CustomerID if provided (for testing), else extract from JWT
+	// Allow input.CustomerID if provided, else extract from JWT
 	if input.CustomerID != "" {
 		customerID, err = strconv.Atoi(input.CustomerID)
 		if err != nil {
@@ -149,7 +148,7 @@ func (r *mutationResolver) CreateOrder(ctx context.Context, input models.OrderIn
 		}
 	}
 
-	// ✅ Build order items for repository
+	// Build order items for repository
 	var repoOrderItemsInput []rootModels.OrderItemInput
 	for _, item := range input.Items {
 		productID, err := strconv.Atoi(item.ProductID)
@@ -163,25 +162,25 @@ func (r *mutationResolver) CreateOrder(ctx context.Context, input models.OrderIn
 		})
 	}
 
-	// ✅ Create order in repo
+	// Create order in repo
 	orderID, err := r.Resolver.OrderRepo.CreateOrder(ctx, customerID, repoOrderItemsInput)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create order: %w", err)
 	}
 
-	// ✅ Fetch complete order
+	// Fetch complete order
 	order, err := r.Resolver.OrderRepo.GetOrder(ctx, orderID.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve created order: %w", err)
 	}
 
-	// ✅ Fetch customer
+	// Fetch customer
 	customer, err := r.Resolver.CustomerRepo.GetCustomerById(ctx, customerID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve customer: %w", err)
 	}
 
-	// 📨 Try to send SMS
+	// Try to send SMS
 	smsService, err := pkg.NewSMSService()
 	if err != nil {
 		log.Printf("failed to initialize SMS service: %v", err)
@@ -192,7 +191,7 @@ func (r *mutationResolver) CreateOrder(ctx context.Context, input models.OrderIn
 		}
 	}
 
-	// ✅ Build GraphQL response
+	// Build GraphQL response
 	var gqlOrderItems []*models.OrderItem
 	for _, item := range repoOrderItemsInput {
 		gqlOrderItems = append(gqlOrderItems, &models.OrderItem{
@@ -236,7 +235,7 @@ func (r *mutationResolver) UpdateOrderStatus(ctx context.Context, orderID string
 }
 
 // Call ProductRepo.ListProducts to get all products.
-func (r *queryResolver) Products(ctx context.Context) ([]*models.Product, error) {
+func (r *queryResolver) GetAllProducts(ctx context.Context) ([]*models.Product, error) {
 	products, err := r.Resolver.ProductRepo.ListProducts(ctx)
 	if err != nil {
 		return nil, err
@@ -259,9 +258,7 @@ func (r *queryResolver) Products(ctx context.Context) ([]*models.Product, error)
 	return result, nil
 }
 
-// Product is the resolver for the product field.
-func (r *queryResolver) Product(ctx context.Context, id string) (*models.Product, error) {
-	// Convert id string to int
+func (r *queryResolver) GetProduct(ctx context.Context, id string) (*models.Product, error) {
 	productID, err := strconv.Atoi(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid product ID: %w", err)
@@ -272,7 +269,7 @@ func (r *queryResolver) Product(ctx context.Context, id string) (*models.Product
 		return nil, err
 	}
 	if p == nil {
-		return nil, nil // or return an error if you prefer
+		return nil, nil
 	}
 
 	product := &models.Product{
@@ -282,30 +279,74 @@ func (r *queryResolver) Product(ctx context.Context, id string) (*models.Product
 		Price:       p.Price,
 	}
 	if p.CategoryID != nil {
-		categoryIDStr := strconv.Itoa(*p.CategoryID)
-		product.Category = &models.Category{ID: categoryIDStr}
+		product.Category = &models.Category{ID: strconv.Itoa(*p.CategoryID)}
 	}
 
 	return product, nil
 }
 
-// Categories is the resolver for the categories field.
-func (r *queryResolver) Categories(ctx context.Context) ([]*models.Category, error) {
-	panic(fmt.Errorf("not implemented: Categories - categories"))
+func (r *queryResolver) GetAllCategories(ctx context.Context) ([]*models.Category, error) {
+	categories, err := r.Resolver.CategoryRepo.ListCategories(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var gqlCategories []*models.Category
+	for _, c := range categories {
+		gqlCategories = append(gqlCategories, &models.Category{
+			ID:   strconv.Itoa(c.ID),
+			Name: c.Name,
+		})
+	}
+
+	return gqlCategories, nil
 }
 
-// Category is the resolver for the category field.
-func (r *queryResolver) Category(ctx context.Context, id string) (*models.Category, error) {
-	panic(fmt.Errorf("not implemented: Category - category"))
+// GetCategory is the resolver for the getCategory field.
+func (r *queryResolver) GetCategory(ctx context.Context, id string) (*models.Category, error) {
+	catID, err := strconv.Atoi(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid category ID: %w", err)
+	}
+
+	c, err := r.Resolver.CategoryRepo.GetCategoryById(ctx, catID)
+	if err != nil {
+		return nil, err
+	}
+	if c == nil {
+		return nil, nil
+	}
+
+	return &models.Category{
+		ID:   strconv.Itoa(c.ID),
+		Name: c.Name,
+	}, nil
 }
 
-// Customers is the resolver for the customers field.
-func (r *queryResolver) Customers(ctx context.Context) ([]*models.Customer, error) {
-	panic(fmt.Errorf("not implemented: Customers - customers"))
+// GetAllCustomers is the resolver for the getAllCustomers field.
+func (r *queryResolver) GetAllCustomers(ctx context.Context) ([]*models.Customer, error) {
+	customers, err := r.Resolver.CustomerRepo.ListCustomers(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var gqlCustomers []*models.Customer
+	for _, c := range customers {
+		gqlCustomers = append(gqlCustomers, &models.Customer{
+			ID:        strconv.Itoa(c.ID),
+			FirstName: c.FirstName,
+			LastName:  c.LastName,
+			Email:     c.Email,
+			Phone:     c.Phone,
+			CreatedAt: c.CreatedAt.Format(time.RFC3339),
+		})
+	}
+
+	return gqlCustomers, nil
 }
 
 // Customer is the resolver for the customer field.
-func (r *queryResolver) Customer(ctx context.Context, id string) (*models.Customer, error) {
+func (r *queryResolver) GetCustomer(ctx context.Context, id string) (*models.Customer, error) {
 	customerID, err := strconv.Atoi(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid customer ID: %w", err)
@@ -330,7 +371,7 @@ func (r *queryResolver) Customer(ctx context.Context, id string) (*models.Custom
 }
 
 // call OrderRepo.ListOrders to get all orders.
-func (r *queryResolver) Orders(ctx context.Context) ([]*models.Order, error) {
+func (r *queryResolver) GetAllOrders(ctx context.Context) ([]*models.Order, error) {
 	orders, err := r.Resolver.OrderRepo.ListOrders(ctx)
 	if err != nil {
 		return nil, err
@@ -369,7 +410,7 @@ func (r *queryResolver) Orders(ctx context.Context) ([]*models.Order, error) {
 }
 
 // single order fetching with its order items
-func (r *queryResolver) Order(ctx context.Context, id string) (*models.Order, error) {
+func (r *queryResolver) GetOrder(ctx context.Context, id string) (*models.Order, error) {
 	orderID, err := strconv.Atoi(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid order ID: %w", err)
@@ -422,32 +463,32 @@ func (r *queryResolver) AveragePriceByCategory(ctx context.Context, categoryID s
 }
 
 // ProductCatalog is the resolver for the productCatalog field.
-func (r *queryResolver) ProductCatalog(ctx context.Context) ([]*gqlModels.ProductCatalog, error) {
+func (r *queryResolver) ProductCatalog(ctx context.Context) ([]*models.ProductCatalog, error) {
 	// Fetch from repository
 	catalogs, err := r.Resolver.CatalogRepo.GetProductCatalog(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch product catalog: %w", err)
 	}
 
-	var gqlCatalogs []*gqlModels.ProductCatalog
+	var gqlCatalogs []*models.ProductCatalog
 	for _, c := range catalogs {
-		var gqlSubCategories []*gqlModels.ProductSubCategory
+		var gqlSubCategories []*models.ProductSubCategory
 		for _, sub := range c.SubCategories {
-			var gqlProducts []*gqlModels.Product
+			var gqlProducts []*models.Product
 			for _, p := range sub.Products {
-				gqlProducts = append(gqlProducts, &gqlModels.Product{
+				gqlProducts = append(gqlProducts, &models.Product{
 					ID:          strconv.Itoa(p.ID),
 					Name:        p.Name,
 					Description: p.Description,
 					Price:       p.Price,
 				})
 			}
-			gqlSubCategories = append(gqlSubCategories, &gqlModels.ProductSubCategory{
+			gqlSubCategories = append(gqlSubCategories, &models.ProductSubCategory{
 				Name:     sub.Name,
 				Products: gqlProducts,
 			})
 		}
-		gqlCatalogs = append(gqlCatalogs, &gqlModels.ProductCatalog{
+		gqlCatalogs = append(gqlCatalogs, &models.ProductCatalog{
 			TopCategoryName: c.TopCategoryName,
 			SubCategories:   gqlSubCategories,
 		})

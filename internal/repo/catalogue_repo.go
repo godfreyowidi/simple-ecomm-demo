@@ -49,7 +49,7 @@ func (r *CatalogRepo) GetProductCatalog(ctx context.Context) ([]models.ProductCa
 			return nil, fmt.Errorf("scan row: %w", err)
 		}
 
-		// Normalize category names
+		// we normalize category names
 		topName := ""
 		if topCatName != nil {
 			topName = *topCatName
@@ -59,7 +59,7 @@ func (r *CatalogRepo) GetProductCatalog(ctx context.Context) ([]models.ProductCa
 			subName = *subCatName
 		}
 
-		// Get or create top category
+		// we get or create top category
 		if _, ok := catalogMap[topName]; !ok {
 			catalogMap[topName] = &models.ProductCatalog{
 				TopCategoryName: topName,
@@ -67,7 +67,7 @@ func (r *CatalogRepo) GetProductCatalog(ctx context.Context) ([]models.ProductCa
 		}
 		topCat := catalogMap[topName]
 
-		// Get or create subcategory
+		// we get or create subcategory
 		var subCat *models.ProductSubCategory
 		for i := range topCat.SubCategories {
 			if topCat.SubCategories[i].Name == subName {
@@ -80,7 +80,7 @@ func (r *CatalogRepo) GetProductCatalog(ctx context.Context) ([]models.ProductCa
 			subCat = &topCat.SubCategories[len(topCat.SubCategories)-1]
 		}
 
-		// Add product if present
+		// here we add product if present
 		if productID.Valid && productName != nil {
 			subCat.Products = append(subCat.Products, models.Product{
 				ID:          int(productID.Int32),
@@ -91,7 +91,7 @@ func (r *CatalogRepo) GetProductCatalog(ctx context.Context) ([]models.ProductCa
 		}
 	}
 
-	// Convert map to slice
+	// here we convert map to slice
 	var result []models.ProductCatalog
 	for _, c := range catalogMap {
 		result = append(result, *c)
