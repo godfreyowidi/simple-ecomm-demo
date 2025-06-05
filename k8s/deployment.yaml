@@ -16,11 +16,12 @@ spec:
         - name: do-registry
       containers:
         - name: savanna-app
-          image: registry.digitalocean.com/savanna/savanna-app:latest
+          image: registry.digitalocean.com/savanna/savanna-app
           imagePullPolicy: Always
-          
+
           ports:
             - containerPort: 8080
+
           env:
             - name: DATABASE_URL
               valueFrom:
@@ -72,12 +73,14 @@ spec:
                 secretKeyRef:
                   name: app-secret
                   key: AT_SANDBOX
+
           readinessProbe:
             httpGet:
               path: /healthz
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
+
           livenessProbe:
             httpGet:
               path: /healthz

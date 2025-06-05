@@ -3,6 +3,7 @@ kind: Job
 metadata:
   name: migrate-db
 spec:
+  backoffLimit: 2
   template:
     spec:
       imagePullSecrets:
@@ -10,17 +11,19 @@ spec:
       containers:
         - name: migrate
           image: migrate/migrate:v4.16.2
-          command: ["migrate"]
+          command: ["/bin/sh", "-c"]
           args:
-            - "-path"
-            - "/migrations"
-            - "-database"
-            - "postgres://postgres:securepass@savanna-db:5432/savanna?sslmode=disable"
-            - "up"
+            - migrate -path /migrations -database "$DATABASE_URL" up
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: DATABASE_URL
           volumeMounts:
             - name: migration-files
               mountPath: /migrations
-      restartPolicy: OnFailure
+      restartPolicy: Never
       volumes:
         - name: migration-files
           configMap:

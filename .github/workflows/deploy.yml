@@ -28,16 +28,20 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: 🏷️ Set IMAGE_TAG from Git SHA
+        id: vars
+        run: echo "IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
       - name: 🐳 Build App Image
-        run: docker build -t $REGISTRY/${{ env.IMAGE_NAME }}:latest .
+        run: docker build -t $REGISTRY/${{ env.IMAGE_NAME }}:$IMAGE_TAG .
 
       - name: 🐳 Build Migration Image
-        run: docker build -f Dockerfile.migrate -t $REGISTRY/${{ env.IMAGE_NAME }}:migrate .
+        run: docker build -f Dockerfile.migrate -t $REGISTRY/${{ env.IMAGE_NAME }}:migrate-$IMAGE_TAG .
 
       - name: 🚀 Push Docker Images
         run: |
-          docker push $REGISTRY/${{ env.IMAGE_NAME }}:latest
-          docker push $REGISTRY/${{ env.IMAGE_NAME }}:migrate
+          docker push $REGISTRY/${{ env.IMAGE_NAME }}:$IMAGE_TAG
+          docker push $REGISTRY/${{ env.IMAGE_NAME }}:migrate-$IMAGE_TAG
 
       - name: ⚙️ Set up kubectl
         uses: azure/setup-kubectl@v3
@@ -78,3 +82,8 @@ jobs:
           kubectl apply -f k8s/service.yaml
           kubectl apply -f k8s/deployment.yaml
           kubectl apply -f k8s/migrate-job.yaml
+
+      - name: 🔁 Patch Deployment Image
+        run: |
+          IMAGE_TAG=$(git rev-parse --short HEAD)
+          kubectl set image deployment/savanna-app savanna-app=$REGISTRY/${{ env.IMAGE_NAME }}:$IMAGE_TAG

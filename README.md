@@ -1,5 +1,7 @@
 # E-Commerce Demo Boilerplate
 
+You can test the api on this link [http://159.223.243.203/](http://159.223.243.203/) on graphql playground or [http://159.223.243.203/public-query](http://159.223.243.203/public-query) on postman using these [queries and mutations](https://gist.github.com/godfreyowidi/8b5f9e82014da7097662224b7bc14c91). Start by listing categories then checking products under each category then you can create products and make an order. You will clearly see the SMS test logges if you go with the local minikube setup. Authentication and authorization is done by Auth0. 
+
 Check out a detailed [medium article](https://godfreyowidi.medium.com/golang-docker-graphql-pgx-kubernetes-digitalocean-in-a-partial-clean-architecture-1070548ba1cb) with explanation showing a step-by-step setup of the project and more. Its a WIP 🙏
 
 This is a ready-to-use boilerplate project made with Go. It follows a clean and organized code structure (called clean architecture) and is good for learning or starting real applications.
